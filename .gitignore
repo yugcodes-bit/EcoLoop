@@ -1,0 +1,9 @@
+# Ignore all CSV datasets
+*.csv
+
+# Ignore compiled Python files
+__pycache__/
+*.py[cod]
+
+# Ignore trained models
+*.pkl
