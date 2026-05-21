@@ -12,6 +12,7 @@
 
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel, Field
+from fastapi.middleware.cors import CORSMiddleware
 from typing import Optional
 import joblib
 import numpy as np
@@ -40,6 +41,14 @@ app = FastAPI(
     2nd Year B.E. CSE Research Project
     """,
     version="1.0.0"
+)
+# Allow simulator (and any browser-based client) to call this API
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
 # ── Load ML models at startup ──────────────────────────────────────────────

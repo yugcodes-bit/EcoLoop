@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ECO-LOOP Simulator — Spectral Apple Quality Detection</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+
+  <!-- ─── Header ──────────────────────────────────────────── -->
+  <header class="app-header">
+    <div class="brand">
+      <div class="brand-logo">●</div>
+      <div class="brand-text">
+        <h1>ECO-LOOP</h1>
+        <span class="tagline">Spectral Apple Quality Simulator</span>
+      </div>
+    </div>
+    <div class="status-bar">
+      <span class="status-dot"></span>
+      <span class="status-text">SYSTEM READY</span>
+    </div>
+  </header>
+
+  <!-- ─── Main 3-Panel Layout ──────────────────────────────── -->
+  <main class="app-main">
+
+    <!-- LEFT PANEL — Sample Selector -->
+    <aside class="panel panel-left">
+      <h2 class="panel-title">SAMPLE SELECTION</h2>
+      <p class="panel-subtitle">Choose an apple sample to analyze</p>
+
+      <div class="sample-list" id="sampleList">
+        <!-- Sample cards rendered dynamically by app.js -->
+      </div>
+    </aside>
+
+    <!-- CENTER PANEL — Scanning Visualization -->
+    <section class="panel panel-center">
+      <h2 class="panel-title">SCANNING CHAMBER</h2>
+
+      <div class="scan-area" id="scanArea">
+
+        <!-- Empty state (shown until sample is selected) -->
+        <div class="scan-empty" id="scanEmpty">
+          <div class="scan-empty-icon">○</div>
+          <p>SELECT A SAMPLE TO BEGIN</p>
+        </div>
+
+        <!-- Apple + sensor measurement setup -->
+        <div class="apple-stage" id="appleStage" style="display: none;">
+
+          <div class="measurement-setup">
+
+            <!-- Apple in center -->
+            <div class="apple-display" id="appleDisplay">
+              <!-- SVG rendered here by JS -->
+            </div>
+
+            <!-- Sensor positioned below apple -->
+            <div class="sensor-device" id="sensorDevice">
+              <svg class="sensor-svg" viewBox="0 0 200 80" xmlns="http://www.w3.org/2000/svg">
+                <!-- PCB green board -->
+                <rect x="5" y="5" width="190" height="70" rx="3"
+                      fill="#0d4f2e" stroke="#072a18" stroke-width="1" />
+
+                <!-- Gold pads/traces -->
+                <rect x="10" y="68" width="180" height="4" fill="#b8923f" opacity="0.6" />
+                <line x1="20" y1="20" x2="180" y2="20" stroke="#1a6b40" stroke-width="0.5" />
+                <line x1="20" y1="60" x2="180" y2="60" stroke="#1a6b40" stroke-width="0.5" />
+
+                <!-- 3 LED chips (UV/VIS/NIR) -->
+                <g class="sensor-chips">
+                  <rect x="35" y="28" width="28" height="24" rx="1" fill="#1a1a1a" stroke="#333" />
+                  <circle class="chip-led" cx="49" cy="40" r="3" fill="#666" />
+                  <text x="49" y="58" font-family="monospace" font-size="6" fill="#aaa" text-anchor="middle">UV</text>
+
+                  <rect x="86" y="28" width="28" height="24" rx="1" fill="#1a1a1a" stroke="#333" />
+                  <circle class="chip-led" cx="100" cy="40" r="3" fill="#666" />
+                  <text x="100" y="58" font-family="monospace" font-size="6" fill="#aaa" text-anchor="middle">VIS</text>
+
+                  <rect x="137" y="28" width="28" height="24" rx="1" fill="#1a1a1a" stroke="#333" />
+                  <circle class="chip-led" cx="151" cy="40" r="3" fill="#666" />
+                  <text x="151" y="58" font-family="monospace" font-size="6" fill="#aaa" text-anchor="middle">NIR</text>
+                </g>
+
+                <!-- Header pins -->
+                <g fill="#444">
+                  <rect x="8" y="35" width="6" height="3" rx="0.5" />
+                  <rect x="8" y="42" width="6" height="3" rx="0.5" />
+                  <rect x="8" y="49" width="6" height="3" rx="0.5" />
+                  <rect x="186" y="35" width="6" height="3" rx="0.5" />
+                  <rect x="186" y="42" width="6" height="3" rx="0.5" />
+                </g>
+
+                <!-- Silkscreen label -->
+                <text x="100" y="15" font-family="monospace" font-size="7"
+                      fill="#cccccc" text-anchor="middle" letter-spacing="1">SparkFun AS7265x</text>
+              </svg>
+            </div>
+
+          </div>
+
+          <!-- Status badge below apple -->
+          <div class="sample-badge" id="sampleBadge">
+            SAMPLE • READY TO SCAN
+          </div>
+        </div>
+
+        <!-- Prediction result card (appears after scan) -->
+        <div class="result-card" id="resultCard" style="display: none;">
+          <div class="result-header">
+            <span class="result-label">ML PREDICTION</span>
+            <span class="result-confidence" id="resultConfidence">—</span>
+          </div>
+
+          <div class="result-main">
+            <div class="result-class" id="resultClass">—</div>
+            <div class="result-ph">
+              <span class="ph-label">Predicted pH</span>
+              <span class="ph-value" id="resultPh">—</span>
+            </div>
+          </div>
+
+          <div class="result-recipe" id="resultRecipe">
+            <div class="recipe-row">
+              <span class="recipe-label">ACTION</span>
+              <span class="recipe-value" id="recipeAction">—</span>
+            </div>
+            <div class="recipe-row">
+              <span class="recipe-label">C:N RATIO</span>
+              <span class="recipe-value" id="recipeCN">—</span>
+            </div>
+            <div class="recipe-row">
+              <span class="recipe-label">AMENDMENT</span>
+              <span class="recipe-value" id="recipeAmendment">—</span>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <div class="action-bar">
+        <button class="btn btn-primary" disabled>
+          <span class="btn-icon">▶</span>
+          <span>RUN SIMULATION</span>
+        </button>
+        <button class="btn btn-secondary" disabled>
+          <span class="btn-icon">✂</span>
+          <span>CUT APPLE</span>
+        </button>
+      </div>
+    </section>
+
+    <!-- RIGHT PANEL — Sensor Readings -->
+    <aside class="panel panel-right">
+      <h2 class="panel-title">SENSOR OUTPUT</h2>
+      <p class="panel-subtitle">AS7265x 18-channel Vis-NIR</p>
+
+      <!-- Empty state -->
+      <div class="readings-empty" id="readingsEmpty">
+        <div class="readings-empty-icon">~</div>
+        <p>NO DATA YET</p>
+        <p class="empty-sub">Run a scan to see channel readings</p>
+      </div>
+
+      <!-- Active readings (hidden until scan completes) -->
+      <div class="readings-content" id="readingsContent" style="display: none;">
+
+        <!-- Summary stats at top -->
+        <div class="reading-summary">
+          <div class="summary-row">
+            <span class="summary-label">SCAN TIME</span>
+            <span class="summary-value" id="scanTimeValue">—</span>
+          </div>
+          <div class="summary-row">
+            <span class="summary-label">MODE</span>
+            <span class="summary-value">REFLECTANCE</span>
+          </div>
+          <div class="summary-row">
+            <span class="summary-label">CHANNELS</span>
+            <span class="summary-value">18 / 18</span>
+          </div>
+        </div>
+
+        <!-- Channel readings header -->
+        <div class="channels-header">
+          <span>CHANNEL</span>
+          <span>VALUE</span>
+        </div>
+
+        <!-- Channel bars (rendered by JS) -->
+        <div class="channels-list" id="channelsList">
+          <!-- 18 channels rendered here -->
+        </div>
+      </div>
+    </aside>
+
+  </main>
+
+  <!-- ─── Footer ──────────────────────────────────────────── -->
+  <footer class="app-footer">
+    <span>ECO-LOOP Research Simulator v1.0</span>
+    <span>•</span>
+    <span>Powered by AS7265x + Random Forest ML</span>
+  </footer>
+
+  <script src="apple-data.js"></script>
+  <script src="reading-generator.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
