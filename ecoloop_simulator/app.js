@@ -116,6 +116,9 @@ function selectSample(sampleId) {
   });
 
   scanEmptyEl.style.display  = 'none';
+  // Remove verdict overlay if present
+  const oldVerdict = document.getElementById('verdictOverlay');
+  if (oldVerdict) oldVerdict.remove();
   appleStageEl.style.display = 'flex';
 
   appleDisplayEl.innerHTML = `
@@ -352,11 +355,120 @@ function wait(ms) {
 }
 
 // ══════════════════════════════════════════════════════════
+// CUT APPLE — Reveal internal truth + compare with prediction
+// ══════════════════════════════════════════════════════════
+
+async function cutApple() {
+  if (!appState.selectedAppleData || !appState.lastPrediction) return;
+
+  const apple = appState.selectedAppleData;
+  const prediction = appState.lastPrediction;
+  const truth = apple.truth;
+
+  cutBtn.disabled = true;
+  runBtn.disabled = true;
+
+  // Hide result card during cut animation
+  resultCardEl.style.display = 'none';
+
+  // Replace whole apple with cut halves
+  appleDisplayEl.innerHTML = `
+    <div class="apple-cut" id="appleCut">
+      <div class="apple-half left">
+        ${getAppleCrossSectionSVG(truth, "left", 200)}
+      </div>
+      <div class="apple-half right">
+        ${getAppleCrossSectionSVG(truth, "right", 200)}
+      </div>
+    </div>
+  `;
+
+  // Brief pause so the user sees the closed apple becoming the cut version
+  await wait(150);
+
+  // Trigger the split animation
+  const cutEl = document.getElementById('appleCut');
+  cutEl.classList.add('split');
+
+  // Wait for split animation to finish, then show verdict
+  await wait(800);
+
+  // Determine if prediction was correct
+  const predictedClass = prediction.rot_class;
+  const actualClass    = truth.classCode;
+  const isCorrect      = predictedClass === actualClass;
+
+  showVerdict(prediction, truth, isCorrect);
+
+  setStatus(isCorrect ? 'PREDICTION CORRECT ✓' : 'PREDICTION MISMATCH',
+            isCorrect ? 'complete' : '');
+
+  sampleBadgeEl.textContent = `${apple.label} • TRUTH REVEALED`;
+
+  await wait(600);
+  runBtn.disabled = false;
+}
+
+
+function showVerdict(prediction, truth, isCorrect) {
+  // Remove any existing verdict
+  const existing = document.getElementById('verdictOverlay');
+  if (existing) existing.remove();
+
+  // Class display info
+  const PRED_NAMES   = { 0: "FRESH", 1: "EARLY-ROT", 2: "SEVERE-ROT" };
+  const PRED_CSS     = { 0: "fresh", 1: "early", 2: "severe" };
+
+  const predName = PRED_NAMES[prediction.rot_class] || "UNKNOWN";
+  const predCss  = PRED_CSS[prediction.rot_class]   || "fresh";
+  const truthName = truth.class.toUpperCase();
+  const truthCss  = PRED_CSS[truth.classCode] || "fresh";
+
+  const overlay = document.createElement('div');
+  overlay.id = 'verdictOverlay';
+  overlay.className = 'verdict-overlay ' + (isCorrect ? 'correct' : 'incorrect');
+
+  overlay.innerHTML = `
+    <div class="verdict-header">
+      <div class="verdict-icon">${isCorrect ? '✓' : '✗'}</div>
+      <div>
+        <div class="verdict-title">
+          ${isCorrect ? 'Prediction Validated' : 'Prediction Mismatch'}
+        </div>
+        <div class="verdict-subtitle">
+          ${isCorrect
+            ? 'ML model matched ground truth'
+            : 'ML model did not match ground truth'}
+        </div>
+      </div>
+    </div>
+
+    <div class="verdict-comparison">
+      <div class="verdict-cell">
+        <div class="verdict-cell-label">ML PREDICTION</div>
+        <div class="verdict-cell-value ${predCss}">${predName}</div>
+      </div>
+      <div class="verdict-cell">
+        <div class="verdict-cell-label">ACTUAL TRUTH</div>
+        <div class="verdict-cell-value ${truthCss}">${truthName}</div>
+      </div>
+    </div>
+
+    <div class="verdict-description">
+      "${truth.internalDescription}"
+    </div>
+  `;
+
+  scanAreaEl.appendChild(overlay);
+}
+
+// ══════════════════════════════════════════════════════════
 // INIT
 // ══════════════════════════════════════════════════════════
 
 window.addEventListener('DOMContentLoaded', () => {
   renderSampleList();
   runBtn.addEventListener('click', runSimulation);
-  console.log("App initialized");
+  cutBtn.addEventListener('click', cutApple);
+  console.log("App initialized — all modules loaded");
 });

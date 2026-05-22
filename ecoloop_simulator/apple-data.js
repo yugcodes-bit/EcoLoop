@@ -10,24 +10,21 @@ const APPLE_SAMPLES = [
     displayName: "Fresh Apple",
     description: "Visibly healthy red apple",
 
-    // What it LOOKS like from outside (controls SVG appearance)
     appearance: {
-      bodyColor:   "#d9342b",      // deep red
+      bodyColor:   "#d9342b",
       highlightColor: "#f56358",
       shadowColor: "#a01b14",
       hasSpots:    false,
       spotIntensity: 0
     },
 
-    // What it ACTUALLY is inside (the hidden truth)
     truth: {
-      class: "Fresh",           // Fresh / Early-Rot / Severe-Rot
+      class: "Fresh",
       classCode: 0,
       pH: 4.25,
       internalDescription: "Healthy white-cream flesh, intact cells, no rot"
     },
 
-    // Spectral signature anchor — used to generate readings later
     spectralProfile: "fresh"
   },
 
@@ -85,7 +82,6 @@ const APPLE_SAMPLES = [
     displayName: "Mystery Apple",
     description: "Unknown condition — randomized",
 
-    // appearance and truth get randomized when selected
     isRandom: true,
     appearance: null,
     truth: null,
@@ -93,14 +89,12 @@ const APPLE_SAMPLES = [
   }
 ];
 
+
 /* ============================================================
    Random apple generator (for Sample 04 — the mystery apple)
    ============================================================ */
 
 function generateMysteryApple() {
-  // The interesting twist: sometimes the apple looks fresh
-  // but is rotten inside. This is your project's biggest claim!
-
   const scenarios = [
     // Scenario A — looks fresh, IS fresh
     {
@@ -149,13 +143,13 @@ function generateMysteryApple() {
 
 
 /* ============================================================
-   SVG Apple Generator — Returns SVG string for any apple
+   SVG Apple Generator — Whole apple (outside view)
    ============================================================ */
 
-function getAppleSVG(appearance, size = 200) {
+function getAppleSVG(appearance, size) {
+  size = size || 200;
   const { bodyColor, highlightColor, shadowColor, hasSpots, spotIntensity } = appearance;
 
-  // Generate spots if needed
   let spots = '';
   if (hasSpots && spotIntensity > 0) {
     const spotCount = Math.floor(spotIntensity * 8);
@@ -184,7 +178,6 @@ function getAppleSVG(appearance, size = 200) {
         </radialGradient>
       </defs>
 
-      <!-- Apple body shape -->
       <path d="M 100,40
                C 70,40 45,65 45,105
                C 45,145 70,175 100,175
@@ -192,19 +185,85 @@ function getAppleSVG(appearance, size = 200) {
                C 155,65 130,40 100,40 Z"
             fill="url(#appleGradient)" />
 
-      <!-- Spots overlay -->
       ${spots}
 
-      <!-- Highlight shine -->
       <ellipse cx="80" cy="75" rx="20" ry="28" fill="url(#highlight)" />
 
-      <!-- Stem -->
       <path d="M 100,45 Q 105,30 110,25 L 108,22 Q 102,28 98,42 Z"
             fill="#4a3520" />
 
-      <!-- Leaf -->
       <path d="M 110,28 Q 125,22 130,32 Q 122,38 110,32 Z"
             fill="#3d6b2c" />
+    </svg>
+  `;
+}
+
+
+/* ============================================================
+   Apple Cross-Section SVG — Reveals internal state when cut
+   ============================================================ */
+
+function getAppleCrossSectionSVG(truth, side, size) {
+  side = side || "left";
+  size = size || 200;
+
+  const isLeft = side === "left";
+  const classCode = truth.classCode;
+
+  let rotPatches = '';
+
+  if (classCode === 0) {
+    rotPatches = '';
+  } else if (classCode === 1) {
+    rotPatches = `
+      <ellipse cx="${isLeft ? 130 : 70}" cy="100" rx="18" ry="14"
+               fill="#9a6840" opacity="0.5" />
+      <ellipse cx="${isLeft ? 125 : 75}" cy="115" rx="10" ry="8"
+               fill="#7a4828" opacity="0.4" />
+    `;
+  } else {
+    rotPatches = `
+      <ellipse cx="${isLeft ? 130 : 70}" cy="100" rx="32" ry="26"
+               fill="#5a3018" opacity="0.85" />
+      <ellipse cx="${isLeft ? 115 : 85}" cy="80" rx="18" ry="14"
+               fill="#6e3a1f" opacity="0.7" />
+      <ellipse cx="${isLeft ? 135 : 65}" cy="140" rx="20" ry="16"
+               fill="#4a2810" opacity="0.75" />
+      <ellipse cx="${isLeft ? 110 : 90}" cy="120" rx="12" ry="10"
+               fill="#3a1f0a" opacity="0.6" />
+    `;
+  }
+
+  const halfPath = isLeft
+    ? "M 140,40 C 110,40 85,65 85,105 C 85,145 110,175 140,175 Z"
+    : "M 60,40 C 90,40 115,65 115,105 C 115,145 90,175 60,175 Z";
+
+  const skinColor = "#a52a1f";
+  const coreX = isLeft ? 140 : 60;
+
+  return `
+    <svg width="${size}" height="${size}" viewBox="0 0 200 200"
+         xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <radialGradient id="fleshGrad-${side}" cx="50%" cy="40%" r="60%">
+          <stop offset="0%"   stop-color="#fbf6e4" />
+          <stop offset="70%"  stop-color="#f0e6cc" />
+          <stop offset="100%" stop-color="#d9c89c" />
+        </radialGradient>
+      </defs>
+
+      <path d="${halfPath}" fill="url(#fleshGrad-${side})" />
+      <path d="${halfPath}" fill="none" stroke="${skinColor}" stroke-width="3" />
+
+      ${rotPatches}
+
+      <line x1="${coreX}" y1="50" x2="${coreX}" y2="165"
+            stroke="#c4a878" stroke-width="1" opacity="0.5" />
+
+      <ellipse cx="${coreX + (isLeft ? -8 : 8)}" cy="100"
+               rx="3" ry="5" fill="#5a3a20" opacity="0.7" />
+      <ellipse cx="${coreX + (isLeft ? -8 : 8)}" cy="115"
+               rx="3" ry="5" fill="#5a3a20" opacity="0.7" />
     </svg>
   `;
 }
